@@ -443,7 +443,7 @@
         <div class="owe" id="totalOwedDesktop">$0</div>
         <div class="small" id="floorNoteDesktop">No penalty triggered.</div>
         <div class="summary-grid">
-          <div class="metric"><span class="small">Raw penalties</span><b id="rawPenaltyDesktop">$0</b></div>
+          <div class="metric"><span class="small">Per-day penalties</span><b id="rawPenaltyDesktop">$0</b></div>
           <div class="metric"><span class="small">Rules violated</span><b id="violationCountDesktop">0</b></div>
         </div>
         <div class="violations" id="violationsDesktop"></div>
@@ -454,13 +454,13 @@
         <div class="settings">
           <div class="setting-row">
             <div class="field">
-              <label>Minimum owed if any rule is broken</label>
+              <label>One-time penalty if any rule is broken</label>
               <input type="number" id="minimumFloorDesktop" min="0" step="5" style="width:150px">
             </div>
             <button class="btn" id="addHabitDesktop">+ Add item</button>
           </div>
           <div class="habits-list" id="habitsListDesktop"></div>
-          <p class="note"><strong>At most</strong> charges for each checked day above the limit. <strong>At least</strong> charges for each day below the target. <strong>Every day</strong> charges for each missed day. Future days do not count as missed yet.</p>
+          <p class="note"><strong>The one-time weekly penalty is charged once as soon as any rule is broken. <strong>At most</strong> then adds the per-day penalty for each checked day above the limit. <strong>At least</strong> adds the per-day penalty for each day below the target. <strong>Every day</strong> adds the per-day penalty for each missed day. Future days do not count as missed yet.</p>
         </div>
       </details>
     </aside>
@@ -509,7 +509,7 @@
 
         <div class="mobile-summary-grid">
           <div class="mobile-summary-box">
-            <div class="label">RAW PENALTIES</div>
+            <div class="label">PER-DAY PENALTIES</div>
             <div class="value" id="rawPenaltyMobile">$0</div>
           </div>
           <div class="mobile-summary-box">
@@ -531,14 +531,14 @@
         <summary><span>Rules & settings</span><span>Tap to edit</span></summary>
         <div class="settings">
           <div class="field" style="margin-bottom:12px">
-            <label>Minimum owed if any rule is broken</label>
+            <label>One-time penalty if any rule is broken</label>
             <input type="number" id="minimumFloorMobile" min="0" step="5">
           </div>
 
           <button class="btn" id="addHabitMobile" style="width:100%">+ Add item</button>
 
           <div class="mobile-settings-list" id="habitsListMobile"></div>
-          <p class="note"><strong>At most</strong> = penalty for extra days. <strong>At least</strong> = penalty when you finish below the target. <strong>Every day</strong> = penalty for each missed day.</p>
+          <p class="note"><strong>The one-time weekly penalty is charged only once after the first broken rule. <strong>At most</strong> = extra per-day penalties above the limit. <strong>At least</strong> = extra per-day penalties when you finish below the target. <strong>Every day</strong> = extra per-day penalty for each missed day.</p>
         </div>
       </details>
 
@@ -701,7 +701,7 @@ function calculate(w,days){
     }
   });
 
-  const total=raw>0 ? Math.max(raw,Number(config.minimumFloor)||0) : 0;
+  const total=raw>0 ? (Number(config.minimumFloor)||0) + raw : 0;
   return {raw,total,daily,violations};
 }
 
@@ -887,9 +887,7 @@ function renderSummary(suffix,calc){
   document.getElementById('floorNote'+suffix).textContent =
     calc.raw===0
       ? 'No penalty triggered.'
-      : calc.raw<floor
-        ? `Raw penalties are ${money(calc.raw)}, so the ${money(floor)} minimum applies.`
-        : `Penalty total is above the ${money(floor)} minimum.`;
+      : `${money(floor)} one-time rule-break penalty + ${money(calc.raw)} in per-day penalties.`;
 
   const box=document.getElementById('violations'+suffix);
   box.innerHTML=calc.violations.length
