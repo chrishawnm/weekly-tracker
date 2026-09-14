@@ -64,6 +64,7 @@
     font-weight:700;
   }
   .btn.primary{background:var(--accent);border-color:var(--accent);color:white}
+  .btn.share{background:#172033;border-color:#172033;color:white}
   .btn.danger{color:var(--bad)}
   .pill{
     display:inline-flex;
@@ -439,7 +440,10 @@
 
     <aside>
       <section class="card summary">
-        <div class="small">AMOUNT OWED THIS WEEK</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="small">AMOUNT OWED THIS WEEK</div>
+          <button class="btn share" id="shareWeekDesktop">Share weekly summary</button>
+        </div>
         <div class="owe" id="totalOwedDesktop">$0</div>
         <div class="small" id="floorNoteDesktop">No penalty triggered.</div>
         <div class="summary-grid">
@@ -503,7 +507,10 @@
       </section>
 
       <section class="card mobile-card">
-        <div class="small">AMOUNT OWED THIS WEEK</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="small">AMOUNT OWED THIS WEEK</div>
+          <button class="btn share" id="shareWeekMobile">Share weekly summary</button>
+        </div>
         <div class="owe" id="totalOwedMobile">$0</div>
         <div class="small" id="floorNoteMobile">No penalty triggered.</div>
 
@@ -1075,6 +1082,93 @@ document.getElementById('addHabitMobile').addEventListener('click',addHabit);
 
 document.getElementById('minimumFloorDesktop').addEventListener('change',e=>setMinimumFloor(e.target.value));
 document.getElementById('minimumFloorMobile').addEventListener('change',e=>setMinimumFloor(e.target.value));
+
+
+function buildWeeklySummary(){
+  const days=daysOfWeek();
+  const w=loadWeek();
+  const calc=calculate(w,days);
+
+  const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
+  const weekLabel=`${fmt.format(days[0])} – ${fmt.format(days[6])}`;
+
+  const habitLines=config.habits.map(h=>{
+    const checked=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
+
+    if(h.type==='atmost'){
+      const over=Math.max(0,checked-h.target);
+      return `${h.name}: ${checked}/${h.target}${over>0 ? ` (${over} over)` : ''}`;
+    }
+
+    if(h.type==='atleast'){
+      const short=Math.max(0,h.target-checked);
+      return `${h.name}: ${checked}/${h.target}${short>0 ? ` (${short} short)` : ''}`;
+    }
+
+    return `${h.name}: ${checked}/7`;
+  });
+
+  const budgetLines=config.budgets.map(b=>{
+    const raw=w.budgets?.[b.id];
+    if(raw==='' || raw===undefined || raw===null){
+      return `${b.name}: not entered / ${money(b.limit)}`;
+    }
+    const spent=Number(raw);
+    const diff=b.limit-spent;
+    return `${b.name}: ${money(spent)} / ${money(b.limit)}${diff>=0 ? ` (${money(diff)} left)` : ` (${money(Math.abs(diff))} over)`}`;
+  });
+
+  const basePenalty=calc.raw>0 ? Number(config.minimumFloor)||0 : 0;
+
+  return [
+    `Weekly Accountability — ${weekLabel}`,
+    '',
+    ...habitLines,
+    '',
+    ...budgetLines,
+    '',
+    `One-time rule-break penalty: ${money(basePenalty)}`,
+    `Per-day penalties: ${money(calc.raw)}`,
+    `Total owed: ${money(calc.total)}`
+  ].join('\n');
+}
+
+async function shareWeeklySummary(){
+  const text=buildWeeklySummary();
+  const days=daysOfWeek();
+  const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
+  const title=`Weekly Accountability — ${fmt.format(days[0])}–${fmt.format(days[6])}`;
+
+  try{
+    if(navigator.share){
+      await navigator.share({title,text});
+      return;
+    }
+
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      alert('Weekly summary copied to your clipboard.');
+      return;
+    }
+
+    const box=document.createElement('textarea');
+    box.value=text;
+    box.style.position='fixed';
+    box.style.opacity='0';
+    document.body.appendChild(box);
+    box.focus();
+    box.select();
+    document.execCommand('copy');
+    box.remove();
+    alert('Weekly summary copied to your clipboard.');
+  }catch(err){
+    if(err && err.name==='AbortError') return;
+    alert('Could not open sharing. Please try again.');
+  }
+}
+
+document.getElementById('shareWeekDesktop').addEventListener('click',shareWeeklySummary);
+document.getElementById('shareWeekMobile').addEventListener('click',shareWeeklySummary);
 
 render();
 </script>
