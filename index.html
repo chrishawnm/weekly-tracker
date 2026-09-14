@@ -1,0 +1,393 @@
+from pathlib import Path
+
+html = r'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Weekly Accountability Tracker</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --ink:#172033; --muted:#68738a; --line:#dfe5ef;
+    --good:#177245; --bad:#b42318; --warn:#9a6700; --accent:#405cf5; --soft:#eef1ff;
+    --shadow:0 10px 30px rgba(30,42,72,.08); --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .wrap{max-width:1280px;margin:auto;padding:22px}
+  .topbar{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
+  h1{font-size:clamp(26px,4vw,42px);margin:0 0 6px;letter-spacing:-.03em}
+  .sub{color:var(--muted);margin:0;max-width:780px;line-height:1.45}
+  .weeknav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 13px;color:var(--ink);font-weight:650}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:white}
+  .btn.danger{color:var(--bad)}
+  .grid{display:grid;grid-template-columns:1.55fr .85fr;gap:18px;align-items:start}
+  .card{background:var(--card);border:1px solid #edf0f6;border-radius:var(--radius);box-shadow:var(--shadow)}
+  .cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 18px 10px}
+  .cardhead h2{margin:0;font-size:19px}
+  .small{font-size:13px;color:var(--muted)}
+  .calendar-wrap{overflow-x:auto;padding:0 12px 16px}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:850px}
+  th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center;padding:10px 7px}
+  th:first-child,td:first-child{border-left:1px solid var(--line)}
+  thead th{background:#fafbfe;font-size:12px;color:var(--muted);font-weight:750}
+  thead th:first-child{border-top-left-radius:12px}
+  thead th:last-child{border-top-right-radius:12px}
+  .habitcell{text-align:left;min-width:190px;position:sticky;left:0;background:white;z-index:2}
+  thead .habitcell{background:#fafbfe;z-index:3}
+  .habitname{font-weight:750;font-size:14px}
+  .rule{font-size:11px;color:var(--muted);margin-top:3px}
+  .dayhead strong{display:block;color:var(--ink);font-size:13px}
+  .dayhead.today{background:var(--soft)}
+  .check{width:24px;height:24px;accent-color:var(--accent)}
+  .future{opacity:.35}
+  .penalty-row td{background:#fffaf0;font-weight:750;font-size:12px}
+  .penalty-row .habitcell{background:#fffaf0}
+  .budget-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 18px 18px}
+  .budget{border:1px solid var(--line);border-radius:14px;padding:14px}
+  .budget-title{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .budget-title strong{font-size:14px}
+  .budget-limit{font-size:12px;color:var(--muted)}
+  .moneyinput{display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin:11px 0 8px;background:#fbfcfe}
+  .moneyinput input{width:100%;border:0;outline:0;background:transparent;font-weight:700}
+  .status{font-size:12px;font-weight:750}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .summary{padding:18px}
+  .owe{font-size:44px;font-weight:850;letter-spacing:-.04em;margin:4px 0}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+  .metric{padding:12px;border-radius:12px;background:#f8f9fc}
+  .metric b{display:block;font-size:18px;margin-top:4px}
+  .violations{margin-top:14px;display:grid;gap:8px}
+  .violation{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+  .zero{color:var(--muted);font-size:13px;padding:10px 0}
+  .settings{padding:18px}
+  .setting-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:14px}
+  label{font-size:12px;color:var(--muted);font-weight:700}
+  input[type="number"], input[type="text"], select{
+    border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:white;color:var(--ink);min-height:40px
+  }
+  .field{display:grid;gap:5px}
+  .habits-list{display:grid;gap:8px;margin-top:12px}
+  .habit-edit{display:grid;grid-template-columns:1.4fr 1fr .55fr .65fr auto;gap:7px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px}
+  .habit-edit input,.habit-edit select{min-width:0;width:100%}
+  .iconbtn{border:0;background:#fff0ef;color:var(--bad);border-radius:9px;padding:8px 10px;font-weight:800}
+  .note{font-size:12px;color:var(--muted);line-height:1.45}
+  .pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:var(--soft);color:#3547c8;font-size:11px;font-weight:800}
+  .footer{padding:16px 2px 8px;color:var(--muted);font-size:12px;text-align:center}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.budget-wrap{grid-template-columns:1fr}.habit-edit{grid-template-columns:1fr 1fr}.habit-edit .wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>Weekly Accountability</h1>
+      <p class="sub">Check off each day, track weekly spending, and see your running accountability amount. Everything saves automatically on this device.</p>
+    </div>
+    <div class="weeknav">
+      <button class="btn" id="prevWeek">← Previous</button>
+      <button class="btn" id="thisWeek">This week</button>
+      <button class="btn" id="nextWeek">Next →</button>
+      <span class="pill" id="weekLabel"></span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <main class="card">
+      <div class="cardhead">
+        <div>
+          <h2>Daily checklist</h2>
+          <div class="small">A checked box means the item happened/completed that day.</div>
+        </div>
+        <button class="btn" id="clearWeek">Clear this week</button>
+      </div>
+      <div class="calendar-wrap">
+        <table id="calendarTable"></table>
+      </div>
+
+      <div class="cardhead">
+        <div>
+          <h2>Weekly budgets</h2>
+          <div class="small">Enter what you actually spent. These are tracked separately from penalties unless you add your own rule.</div>
+        </div>
+      </div>
+      <div class="budget-wrap" id="budgetWrap"></div>
+    </main>
+
+    <aside>
+      <section class="card summary">
+        <div class="small">AMOUNT OWED THIS WEEK</div>
+        <div class="owe" id="totalOwed">$0</div>
+        <div class="small" id="floorNote">No penalty triggered.</div>
+        <div class="summary-grid">
+          <div class="metric"><span class="small">Raw penalties</span><b id="rawPenalty">$0</b></div>
+          <div class="metric"><span class="small">Rules violated</span><b id="violationCount">0</b></div>
+        </div>
+        <div class="small"><strong>Daily penalty total</strong> is shown at the bottom of each calendar day. For minimum-day goals such as workouts, the deficit is included in the weekly summary.</div>
+        <div class="violations" id="violations"></div>
+      </section>
+
+      <section class="card settings" style="margin-top:18px">
+        <div class="cardhead" style="padding:0 0 12px">
+          <div>
+            <h2>Rules & settings</h2>
+            <div class="small">Add, remove, or change anything.</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="field">
+            <label>Minimum owed if any rule is broken</label>
+            <input type="number" id="minimumFloor" min="0" step="5" style="width:150px">
+          </div>
+          <button class="btn" id="addHabit">+ Add item</button>
+        </div>
+
+        <div class="habits-list" id="habitsList"></div>
+        <p class="note">
+          <strong>Rule types:</strong> “At most” charges for each checked day above the limit.
+          “At least” charges for each day below the target. “Every day” charges for each missed day.
+          Future days in the current week do not count as missed yet.
+        </p>
+      </section>
+    </aside>
+  </div>
+  <div class="footer">Data stays in your browser using local storage. No account or server required.</div>
+</div>
+
+<script>
+const DEFAULTS = {
+  minimumFloor: 50,
+  habits: [
+    {id:'workout', name:'Workout', type:'atleast', target:4, penalty:25},
+    {id:'sugar', name:'Sugar', type:'atmost', target:2, penalty:25},
+    {id:'gambling', name:'Gambling', type:'atmost', target:2, penalty:25},
+    {id:'smoking', name:'Smoking', type:'atmost', target:2, penalty:25},
+    {id:'p', name:'P', type:'atmost', target:2, penalty:25},
+    {id:'drinking', name:'Drinking', type:'atmost', target:2, penalty:25},
+    {id:'water', name:'Water', type:'everyday', target:7, penalty:10},
+    {id:'minoxi', name:'Minoxi (night/day)', type:'everyday', target:7, penalty:10},
+    {id:'floss', name:'Floss', type:'everyday', target:7, penalty:10}
+  ],
+  budgets: [
+    {id:'grocery', name:'Grocery budget', limit:150},
+    {id:'goingout', name:'Going out budget', limit:150}
+  ]
+};
+
+let config = JSON.parse(localStorage.getItem('accountability_config') || 'null') || structuredClone(DEFAULTS);
+if(!config.budgets) config.budgets = structuredClone(DEFAULTS.budgets);
+let weekOffset = 0;
+
+function saveConfig(){ localStorage.setItem('accountability_config', JSON.stringify(config)); }
+function uid(){ return 'h_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
+function money(n){ return '$'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
+
+function startOfWeek(date=new Date()){
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const day = d.getDay(); const diff = day===0 ? -6 : 1-day;
+  d.setDate(d.getDate()+diff);
+  return d;
+}
+function currentWeekStart(){
+  const d = startOfWeek();
+  d.setDate(d.getDate()+weekOffset*7);
+  return d;
+}
+function dateKey(d){ return d.toISOString().slice(0,10); }
+function weekKey(){ return dateKey(currentWeekStart()); }
+function loadWeek(){ return JSON.parse(localStorage.getItem('week_'+weekKey()) || '{"checks":{},"budgets":{}}'); }
+function saveWeek(w){ localStorage.setItem('week_'+weekKey(), JSON.stringify(w)); }
+
+function daysOfWeek(){
+  const s=currentWeekStart(); return Array.from({length:7},(_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return d;});
+}
+function isFuture(d){
+  const today=new Date(); today.setHours(0,0,0,0);
+  return d>today;
+}
+function isPastOrToday(d){ return !isFuture(d); }
+
+function ruleText(h){
+  if(h.type==='atmost') return `At most ${h.target} days/week • ${money(h.penalty)} per extra day`;
+  if(h.type==='atleast') return `At least ${h.target} days/week • ${money(h.penalty)} per missing day`;
+  return `Every day • ${money(h.penalty)} per missed day`;
+}
+
+function render(){
+  document.getElementById('minimumFloor').value=config.minimumFloor;
+  const days=daysOfWeek(), w=loadWeek();
+  const end=days[6];
+  const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
+  document.getElementById('weekLabel').textContent=`${fmt.format(days[0])} – ${fmt.format(end)}`;
+
+  let html='<thead><tr><th class="habitcell">Item</th>';
+  const todayKey=dateKey(new Date());
+  days.forEach(d=>{
+    html += `<th class="dayhead ${dateKey(d)===todayKey?'today':''}"><strong>${d.toLocaleDateString(undefined,{weekday:'short'})}</strong>${d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  config.habits.forEach(h=>{
+    html += `<tr><td class="habitcell"><div class="habitname">${escapeHtml(h.name)}</div><div class="rule">${ruleText(h)}</div></td>`;
+    days.forEach(d=>{
+      const dk=dateKey(d), checked=!!(w.checks[h.id]&&w.checks[h.id][dk]);
+      html += `<td class="${isFuture(d)&&weekOffset===0?'future':''}"><input aria-label="${escapeHtml(h.name)} ${dk}" class="check habit-check" type="checkbox" data-habit="${h.id}" data-date="${dk}" ${checked?'checked':''}></td>`;
+    });
+    html += '</tr>';
+  });
+
+  const calc=calculate(w,days);
+  html += `<tr class="penalty-row"><td class="habitcell">Daily penalty</td>`;
+  days.forEach(d=>{ html+=`<td>${money(calc.daily[dateKey(d)]||0)}</td>`; });
+  html += '</tr></tbody>';
+  document.getElementById('calendarTable').innerHTML=html;
+
+  document.querySelectorAll('.habit-check').forEach(el=>el.addEventListener('change',e=>{
+    const w=loadWeek(), hid=e.target.dataset.habit, dk=e.target.dataset.date;
+    if(!w.checks[hid]) w.checks[hid]={};
+    w.checks[hid][dk]=e.target.checked;
+    saveWeek(w); render();
+  }));
+
+  renderBudgets(w);
+  renderSummary(calc);
+  renderHabitSettings();
+}
+
+function calculate(w,days){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const weekEnded = days[6] < today;
+  const activeDays = days.filter(d => weekEnded || isPastOrToday(d));
+  let raw=0, daily={}, violations=[];
+
+  config.habits.forEach(h=>{
+    const checkedDates = days.filter(d=>w.checks[h.id]&&w.checks[h.id][dateKey(d)]).map(dateKey);
+    const activeChecked = activeDays.filter(d=>w.checks[h.id]&&w.checks[h.id][dateKey(d)]).map(dateKey);
+
+    if(h.type==='atmost'){
+      const excess=Math.max(0,checkedDates.length-h.target);
+      if(excess>0){
+        const penalty=excess*h.penalty; raw+=penalty;
+        checkedDates.slice(h.target).forEach(dk=>daily[dk]=(daily[dk]||0)+h.penalty);
+        violations.push({name:h.name, detail:`${checkedDates.length}/${h.target} days — ${excess} extra`, penalty});
+      }
+    } else if(h.type==='everyday'){
+      const missed=activeDays.filter(d=>!(w.checks[h.id]&&w.checks[h.id][dateKey(d)]));
+      if(missed.length>0){
+        const penalty=missed.length*h.penalty; raw+=penalty;
+        missed.forEach(d=>{const dk=dateKey(d); daily[dk]=(daily[dk]||0)+h.penalty;});
+        violations.push({name:h.name, detail:`${missed.length} missed day${missed.length===1?'':'s'} so far`, penalty});
+      }
+    } else if(h.type==='atleast'){
+      // Only count an unavoidable/current deficit: target minus completed minus remaining available days.
+      const completed=checkedDates.length;
+      const remainingAvailable = weekEnded ? 0 : days.filter(isFuture).length;
+      const unavoidableDeficit=Math.max(0,h.target-completed-remainingAvailable);
+      if(unavoidableDeficit>0){
+        const penalty=unavoidableDeficit*h.penalty; raw+=penalty;
+        violations.push({name:h.name, detail:`At least ${h.target}; currently ${completed} with ${remainingAvailable} day${remainingAvailable===1?'':'s'} left`, penalty});
+      }
+    }
+  });
+
+  const total=raw>0 ? Math.max(raw,Number(config.minimumFloor)||0) : 0;
+  return {raw,total,daily,violations};
+}
+
+function renderSummary(calc){
+  document.getElementById('totalOwed').textContent=money(calc.total);
+  document.getElementById('rawPenalty').textContent=money(calc.raw);
+  document.getElementById('violationCount').textContent=calc.violations.length;
+  const floor=Number(config.minimumFloor)||0;
+  document.getElementById('floorNote').textContent = calc.raw===0
+    ? 'No penalty triggered.'
+    : calc.raw<floor ? `Raw penalties are ${money(calc.raw)}, so the ${money(floor)} minimum applies.` : `Penalty total is above the ${money(floor)} minimum.`;
+  const box=document.getElementById('violations');
+  box.innerHTML = calc.violations.length ? calc.violations.map(v=>
+    `<div class="violation"><span><strong>${escapeHtml(v.name)}</strong><br><span class="small">${escapeHtml(v.detail)}</span></span><strong class="bad">${money(v.penalty)}</strong></div>`
+  ).join('') : '<div class="zero">No rule violations so far.</div>';
+}
+
+function renderBudgets(w){
+  const wrap=document.getElementById('budgetWrap');
+  wrap.innerHTML=config.budgets.map(b=>{
+    const val=w.budgets?.[b.id] ?? '';
+    let status='<span class="status warn">Enter spending to check the budget.</span>';
+    if(val!==''){
+      const n=Number(val);
+      status=n<=b.limit
+        ? `<span class="status good">✓ Within budget — ${money(b.limit-n)} left</span>`
+        : `<span class="status bad">Over by ${money(n-b.limit)}</span>`;
+    }
+    return `<div class="budget">
+      <div class="budget-title"><strong>${escapeHtml(b.name)}</strong><span class="budget-limit">Limit ${money(b.limit)}</span></div>
+      <div class="moneyinput"><span>$</span><input type="number" min="0" step="1" data-budget="${b.id}" value="${val}" placeholder="0"></div>
+      ${status}
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-budget]').forEach(el=>el.addEventListener('input',e=>{
+    const w=loadWeek(); if(!w.budgets)w.budgets={}; w.budgets[e.target.dataset.budget]=e.target.value; saveWeek(w); renderBudgets(w);
+  }));
+}
+
+function renderHabitSettings(){
+  const list=document.getElementById('habitsList');
+  list.innerHTML=config.habits.map((h,i)=>`
+    <div class="habit-edit">
+      <input class="wide" type="text" value="${escapeAttr(h.name)}" data-i="${i}" data-f="name" aria-label="Item name">
+      <select data-i="${i}" data-f="type" aria-label="Rule type">
+        <option value="atmost" ${h.type==='atmost'?'selected':''}>At most</option>
+        <option value="atleast" ${h.type==='atleast'?'selected':''}>At least</option>
+        <option value="everyday" ${h.type==='everyday'?'selected':''}>Every day</option>
+      </select>
+      <input type="number" min="1" max="7" value="${h.type==='everyday'?7:h.target}" data-i="${i}" data-f="target" ${h.type==='everyday'?'disabled':''} aria-label="Days">
+      <input type="number" min="0" step="5" value="${h.penalty}" data-i="${i}" data-f="penalty" aria-label="Penalty">
+      <button class="iconbtn" data-remove="${i}" title="Remove">×</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',e=>{
+    const i=Number(e.target.dataset.i), f=e.target.dataset.f;
+    if(f==='name') config.habits[i][f]=e.target.value.trim()||'Untitled';
+    else if(f==='type') {
+      config.habits[i].type=e.target.value;
+      if(e.target.value==='everyday') config.habits[i].target=7;
+    } else config.habits[i][f]=Number(e.target.value);
+    saveConfig(); render();
+  }));
+  list.querySelectorAll('[data-remove]').forEach(el=>el.addEventListener('click',e=>{
+    config.habits.splice(Number(e.target.dataset.remove),1); saveConfig(); render();
+  }));
+}
+
+document.getElementById('minimumFloor').addEventListener('change',e=>{
+  config.minimumFloor=Number(e.target.value)||0; saveConfig(); render();
+});
+document.getElementById('addHabit').addEventListener('click',()=>{
+  config.habits.push({id:uid(),name:'New item',type:'atleast',target:1,penalty:25}); saveConfig(); render();
+});
+document.getElementById('prevWeek').addEventListener('click',()=>{weekOffset--;render();});
+document.getElementById('nextWeek').addEventListener('click',()=>{weekOffset++;render();});
+document.getElementById('thisWeek').addEventListener('click',()=>{weekOffset=0;render();});
+document.getElementById('clearWeek').addEventListener('click',()=>{
+  if(confirm('Clear every check and budget entry for this week?')){
+    localStorage.removeItem('week_'+weekKey()); render();
+  }
+});
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function escapeAttr(s){return escapeHtml(s);}
+render();
+</script>
+</body>
+</html>
+'''
+
+path = Path("/mnt/data/weekly_accountability_tracker.html")
+path.write_text(html, encoding="utf-8")
+print(f"Created {path}")
+print(f"Size: {path.stat().st_size:,} bytes")
