@@ -1,6 +1,4 @@
-from pathlib import Path
-
-html = r'''<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -385,9 +383,3 @@ render();
 </script>
 </body>
 </html>
-'''
-
-path = Path("/mnt/data/weekly_accountability_tracker.html")
-path.write_text(html, encoding="utf-8")
-print(f"Created {path}")
-print(f"Size: {path.stat().st_size:,} bytes")
