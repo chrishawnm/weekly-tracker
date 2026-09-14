@@ -3,33 +3,109 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f5f7fb">
 <title>Weekly Accountability Tracker</title>
 <style>
   :root{
-    --bg:#f5f7fb; --card:#ffffff; --ink:#172033; --muted:#68738a; --line:#dfe5ef;
-    --good:#177245; --bad:#b42318; --warn:#9a6700; --accent:#405cf5; --soft:#eef1ff;
-    --shadow:0 10px 30px rgba(30,42,72,.08); --radius:18px;
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --ink:#172033;
+    --muted:#68738a;
+    --line:#dfe5ef;
+    --good:#177245;
+    --bad:#b42318;
+    --warn:#9a6700;
+    --accent:#405cf5;
+    --accent2:#eef1ff;
+    --soft:#f8f9fc;
+    --shadow:0 10px 30px rgba(30,42,72,.08);
+    --radius:18px;
   }
+
   *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+  html{background:var(--bg)}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+
   button,input,select{font:inherit}
   button{cursor:pointer}
+  input[type="checkbox"]{accent-color:var(--accent)}
+
   .wrap{max-width:1280px;margin:auto;padding:22px}
-  .topbar{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
-  h1{font-size:clamp(26px,4vw,42px);margin:0 0 6px;letter-spacing:-.03em}
-  .sub{color:var(--muted);margin:0;max-width:780px;line-height:1.45}
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+
+  h1{font-size:clamp(28px,4vw,42px);margin:0 0 6px;letter-spacing:-.03em}
+  h2{margin:0;font-size:20px}
+  h3{margin:0;font-size:16px}
+  .sub,.small,.note{color:var(--muted)}
+  .sub{margin:0;max-width:760px;line-height:1.45}
+  .small{font-size:13px}
+  .note{font-size:12px;line-height:1.5}
+
   .weeknav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 13px;color:var(--ink);font-weight:650}
+  .btn{
+    border:1px solid var(--line);
+    background:var(--card);
+    border-radius:12px;
+    padding:10px 13px;
+    color:var(--ink);
+    font-weight:700;
+  }
   .btn.primary{background:var(--accent);border-color:var(--accent);color:white}
   .btn.danger{color:var(--bad)}
-  .grid{display:grid;grid-template-columns:1.55fr .85fr;gap:18px;align-items:start}
-  .card{background:var(--card);border:1px solid #edf0f6;border-radius:var(--radius);box-shadow:var(--shadow)}
-  .cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 18px 10px}
-  .cardhead h2{margin:0;font-size:19px}
-  .small{font-size:13px;color:var(--muted)}
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 10px;
+    border-radius:999px;
+    background:var(--accent2);
+    color:#3547c8;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid #edf0f6;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .cardhead{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:18px 18px 10px;
+  }
+
+  /* Desktop */
+  .desktop-grid{
+    display:grid;
+    grid-template-columns:1.55fr .85fr;
+    gap:18px;
+    align-items:start;
+  }
+
   .calendar-wrap{overflow-x:auto;padding:0 12px 16px}
   table{border-collapse:separate;border-spacing:0;width:100%;min-width:850px}
-  th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center;padding:10px 7px}
+  th,td{
+    border-bottom:1px solid var(--line);
+    border-right:1px solid var(--line);
+    text-align:center;
+    padding:10px 7px;
+  }
   th:first-child,td:first-child{border-left:1px solid var(--line)}
   thead th{background:#fafbfe;font-size:12px;color:var(--muted);font-weight:750}
   thead th:first-child{border-top-left-radius:12px}
@@ -39,43 +115,287 @@
   .habitname{font-weight:750;font-size:14px}
   .rule{font-size:11px;color:var(--muted);margin-top:3px}
   .dayhead strong{display:block;color:var(--ink);font-size:13px}
-  .dayhead.today{background:var(--soft)}
-  .check{width:24px;height:24px;accent-color:var(--accent)}
-  .future{opacity:.35}
+  .dayhead.today{background:var(--accent2)}
+  .check{width:24px;height:24px}
+  .future{opacity:.38}
   .penalty-row td{background:#fffaf0;font-weight:750;font-size:12px}
   .penalty-row .habitcell{background:#fffaf0}
-  .budget-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 18px 18px}
-  .budget{border:1px solid var(--line);border-radius:14px;padding:14px}
+
+  .budget-wrap{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    padding:0 18px 18px;
+  }
+  .budget{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+  }
   .budget-title{display:flex;justify-content:space-between;gap:10px;align-items:center}
   .budget-title strong{font-size:14px}
   .budget-limit{font-size:12px;color:var(--muted)}
-  .moneyinput{display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin:11px 0 8px;background:#fbfcfe}
-  .moneyinput input{width:100%;border:0;outline:0;background:transparent;font-weight:700}
+  .moneyinput{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:8px 10px;
+    margin:11px 0 8px;
+    background:#fbfcfe;
+  }
+  .moneyinput input{
+    width:100%;
+    min-width:0;
+    border:0;
+    outline:0;
+    background:transparent;
+    font-weight:700;
+  }
   .status{font-size:12px;font-weight:750}
-  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .good{color:var(--good)}
+  .bad{color:var(--bad)}
+  .warn{color:var(--warn)}
+
   .summary{padding:18px}
   .owe{font-size:44px;font-weight:850;letter-spacing:-.04em;margin:4px 0}
   .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
-  .metric{padding:12px;border-radius:12px;background:#f8f9fc}
+  .metric{padding:12px;border-radius:12px;background:var(--soft)}
   .metric b{display:block;font-size:18px;margin-top:4px}
   .violations{margin-top:14px;display:grid;gap:8px}
-  .violation{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+  .violation{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:12px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+  }
   .zero{color:var(--muted);font-size:13px;padding:10px 0}
-  .settings{padding:18px}
+
+  details.settings-card{margin-top:18px}
+  details.settings-card summary{
+    list-style:none;
+    cursor:pointer;
+    padding:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-weight:800;
+  }
+  details.settings-card summary::-webkit-details-marker{display:none}
+  details.settings-card summary span:last-child{color:var(--muted);font-size:13px}
+  .settings{padding:0 18px 18px}
   .setting-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:14px}
   label{font-size:12px;color:var(--muted);font-weight:700}
-  input[type="number"], input[type="text"], select{
-    border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:white;color:var(--ink);min-height:40px
+  input[type="number"],input[type="text"],select{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 10px;
+    background:white;
+    color:var(--ink);
+    min-height:40px;
   }
   .field{display:grid;gap:5px}
   .habits-list{display:grid;gap:8px;margin-top:12px}
-  .habit-edit{display:grid;grid-template-columns:1.4fr 1fr .55fr .65fr auto;gap:7px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px}
+  .habit-edit{
+    display:grid;
+    grid-template-columns:1.4fr 1fr .55fr .65fr auto;
+    gap:7px;
+    align-items:center;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:8px;
+  }
   .habit-edit input,.habit-edit select{min-width:0;width:100%}
-  .iconbtn{border:0;background:#fff0ef;color:var(--bad);border-radius:9px;padding:8px 10px;font-weight:800}
-  .note{font-size:12px;color:var(--muted);line-height:1.45}
-  .pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:var(--soft);color:#3547c8;font-size:11px;font-weight:800}
-  .footer{padding:16px 2px 8px;color:var(--muted);font-size:12px;text-align:center}
-  @media(max-width:900px){.grid{grid-template-columns:1fr}.budget-wrap{grid-template-columns:1fr}.habit-edit{grid-template-columns:1fr 1fr}.habit-edit .wide{grid-column:1/-1}}
+  .iconbtn{
+    border:0;
+    background:#fff0ef;
+    color:var(--bad);
+    border-radius:9px;
+    padding:8px 10px;
+    font-weight:800;
+  }
+
+  /* Mobile */
+  .mobile-only{display:none}
+
+  .mobile-shell{display:grid;gap:14px}
+  .mobile-card{padding:16px}
+  .mobile-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .day-tabs{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+    margin-top:14px;
+  }
+  .day-tab{
+    border:1px solid var(--line);
+    background:white;
+    color:var(--ink);
+    border-radius:12px;
+    padding:9px 4px;
+    text-align:center;
+    min-width:0;
+  }
+  .day-tab .dow{
+    display:block;
+    font-size:11px;
+    font-weight:850;
+    text-transform:uppercase;
+  }
+  .day-tab .dom{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .day-tab.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:white;
+  }
+  .day-tab.active .dom{color:rgba(255,255,255,.8)}
+  .day-tab.future-day{opacity:.55}
+
+  .mobile-day-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:16px 0 10px;
+  }
+  .daily-list{display:grid;gap:9px}
+  .daily-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:13px 14px;
+    background:white;
+  }
+  .daily-item-left{min-width:0}
+  .daily-item-name{font-weight:800;font-size:15px}
+  .daily-item-rule{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .mobile-check{
+    width:28px;
+    height:28px;
+    flex:0 0 auto;
+  }
+
+  .day-penalty{
+    margin-top:12px;
+    border-radius:14px;
+    padding:13px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#fffaf0;
+    font-weight:800;
+  }
+
+  .progress-list{display:grid;gap:9px;margin-top:12px}
+  .progress-item{
+    border:1px solid var(--line);
+    border-radius:13px;
+    padding:12px;
+  }
+  .progress-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  .progress-label{font-weight:750;font-size:14px}
+  .progress-value{font-weight:850;font-size:13px}
+  .progress-track{
+    height:7px;
+    border-radius:999px;
+    background:#edf0f6;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--accent);
+    border-radius:999px;
+  }
+  .progress-sub{font-size:11px;color:var(--muted);margin-top:6px}
+
+  .mobile-summary-grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:10px;
+    margin-top:12px;
+  }
+  .mobile-summary-box{
+    background:var(--soft);
+    border-radius:14px;
+    padding:13px;
+  }
+  .mobile-summary-box .label{font-size:11px;color:var(--muted);font-weight:700}
+  .mobile-summary-box .value{font-size:26px;font-weight:850;margin-top:3px}
+
+  .mobile-budget-list{display:grid;gap:10px;margin-top:12px}
+  .mobile-budget{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:13px;
+  }
+
+  .mobile-settings-list{display:grid;gap:9px;margin-top:12px}
+  .mobile-setting-item{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px;
+    display:grid;
+    gap:9px;
+  }
+  .mobile-setting-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .mobile-setting-item input,.mobile-setting-item select{width:100%;min-width:0}
+
+  .footer{
+    padding:16px 2px 8px;
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+  }
+
+  @media(max-width:760px){
+    .wrap{padding:14px}
+    .desktop-only{display:none !important}
+    .mobile-only{display:block}
+    .topbar{margin-bottom:14px}
+    .topbar .sub{font-size:14px}
+    .weeknav{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:7px;
+    }
+    .weeknav .btn{padding:10px 8px}
+    .weeknav .pill{
+      grid-column:1/-1;
+      width:max-content;
+      justify-self:start;
+    }
+    .mobile-card{padding:15px}
+    .owe{font-size:38px}
+  }
 </style>
 </head>
 <body>
@@ -93,15 +413,17 @@
     </div>
   </div>
 
-  <div class="grid">
+  <!-- DESKTOP -->
+  <div class="desktop-grid desktop-only">
     <main class="card">
       <div class="cardhead">
         <div>
           <h2>Daily checklist</h2>
           <div class="small">A checked box means the item happened/completed that day.</div>
         </div>
-        <button class="btn" id="clearWeek">Clear this week</button>
+        <button class="btn" id="clearWeekDesktop">Clear this week</button>
       </div>
+
       <div class="calendar-wrap">
         <table id="calendarTable"></table>
       </div>
@@ -109,50 +431,120 @@
       <div class="cardhead">
         <div>
           <h2>Weekly budgets</h2>
-          <div class="small">Enter what you actually spent. These are tracked separately from penalties unless you add your own rule.</div>
+          <div class="small">Enter what you actually spent.</div>
         </div>
       </div>
-      <div class="budget-wrap" id="budgetWrap"></div>
+      <div class="budget-wrap" id="budgetWrapDesktop"></div>
     </main>
 
     <aside>
       <section class="card summary">
         <div class="small">AMOUNT OWED THIS WEEK</div>
-        <div class="owe" id="totalOwed">$0</div>
-        <div class="small" id="floorNote">No penalty triggered.</div>
+        <div class="owe" id="totalOwedDesktop">$0</div>
+        <div class="small" id="floorNoteDesktop">No penalty triggered.</div>
         <div class="summary-grid">
-          <div class="metric"><span class="small">Raw penalties</span><b id="rawPenalty">$0</b></div>
-          <div class="metric"><span class="small">Rules violated</span><b id="violationCount">0</b></div>
+          <div class="metric"><span class="small">Raw penalties</span><b id="rawPenaltyDesktop">$0</b></div>
+          <div class="metric"><span class="small">Rules violated</span><b id="violationCountDesktop">0</b></div>
         </div>
-        <div class="small"><strong>Daily penalty total</strong> is shown at the bottom of each calendar day. For minimum-day goals such as workouts, the deficit is included in the weekly summary.</div>
-        <div class="violations" id="violations"></div>
+        <div class="violations" id="violationsDesktop"></div>
       </section>
 
-      <section class="card settings" style="margin-top:18px">
-        <div class="cardhead" style="padding:0 0 12px">
-          <div>
-            <h2>Rules & settings</h2>
-            <div class="small">Add, remove, or change anything.</div>
+      <details class="card settings-card">
+        <summary><span>Rules & settings</span><span>Edit</span></summary>
+        <div class="settings">
+          <div class="setting-row">
+            <div class="field">
+              <label>Minimum owed if any rule is broken</label>
+              <input type="number" id="minimumFloorDesktop" min="0" step="5" style="width:150px">
+            </div>
+            <button class="btn" id="addHabitDesktop">+ Add item</button>
           </div>
+          <div class="habits-list" id="habitsListDesktop"></div>
+          <p class="note"><strong>At most</strong> charges for each checked day above the limit. <strong>At least</strong> charges for each day below the target. <strong>Every day</strong> charges for each missed day. Future days do not count as missed yet.</p>
         </div>
-
-        <div class="setting-row">
-          <div class="field">
-            <label>Minimum owed if any rule is broken</label>
-            <input type="number" id="minimumFloor" min="0" step="5" style="width:150px">
-          </div>
-          <button class="btn" id="addHabit">+ Add item</button>
-        </div>
-
-        <div class="habits-list" id="habitsList"></div>
-        <p class="note">
-          <strong>Rule types:</strong> “At most” charges for each checked day above the limit.
-          “At least” charges for each day below the target. “Every day” charges for each missed day.
-          Future days in the current week do not count as missed yet.
-        </p>
-      </section>
+      </details>
     </aside>
   </div>
+
+  <!-- MOBILE -->
+  <div class="mobile-only">
+    <div class="mobile-shell">
+
+      <section class="card mobile-card">
+        <div class="mobile-top">
+          <div>
+            <h2>Today / Daily view</h2>
+            <div class="small">Tap a day, then check off what happened.</div>
+          </div>
+          <button class="btn" id="clearWeekMobile">Clear</button>
+        </div>
+
+        <div class="day-tabs" id="dayTabs"></div>
+
+        <div class="mobile-day-title">
+          <div>
+            <h3 id="selectedDayTitle"></h3>
+            <div class="small" id="selectedDayDate"></div>
+          </div>
+          <span class="pill" id="selectedDayBadge"></span>
+        </div>
+
+        <div class="daily-list" id="dailyList"></div>
+        <div class="day-penalty">
+          <span>Daily penalty</span>
+          <span id="mobileDayPenalty">$0</span>
+        </div>
+      </section>
+
+      <section class="card mobile-card">
+        <h2>Weekly progress</h2>
+        <div class="small">Your progress toward each weekly rule.</div>
+        <div class="progress-list" id="progressList"></div>
+      </section>
+
+      <section class="card mobile-card">
+        <div class="small">AMOUNT OWED THIS WEEK</div>
+        <div class="owe" id="totalOwedMobile">$0</div>
+        <div class="small" id="floorNoteMobile">No penalty triggered.</div>
+
+        <div class="mobile-summary-grid">
+          <div class="mobile-summary-box">
+            <div class="label">RAW PENALTIES</div>
+            <div class="value" id="rawPenaltyMobile">$0</div>
+          </div>
+          <div class="mobile-summary-box">
+            <div class="label">RULES VIOLATED</div>
+            <div class="value" id="violationCountMobile">0</div>
+          </div>
+        </div>
+
+        <div class="violations" id="violationsMobile"></div>
+      </section>
+
+      <section class="card mobile-card">
+        <h2>Weekly budgets</h2>
+        <div class="small">Enter what you actually spent this week.</div>
+        <div class="mobile-budget-list" id="budgetWrapMobile"></div>
+      </section>
+
+      <details class="card settings-card">
+        <summary><span>Rules & settings</span><span>Tap to edit</span></summary>
+        <div class="settings">
+          <div class="field" style="margin-bottom:12px">
+            <label>Minimum owed if any rule is broken</label>
+            <input type="number" id="minimumFloorMobile" min="0" step="5">
+          </div>
+
+          <button class="btn" id="addHabitMobile" style="width:100%">+ Add item</button>
+
+          <div class="mobile-settings-list" id="habitsListMobile"></div>
+          <p class="note"><strong>At most</strong> = penalty for extra days. <strong>At least</strong> = penalty when you finish below the target. <strong>Every day</strong> = penalty for each missed day.</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+
   <div class="footer">Data stays in your browser using local storage. No account or server required.</div>
 </div>
 
@@ -178,15 +570,29 @@ const DEFAULTS = {
 
 let config = JSON.parse(localStorage.getItem('accountability_config') || 'null') || structuredClone(DEFAULTS);
 if(!config.budgets) config.budgets = structuredClone(DEFAULTS.budgets);
-let weekOffset = 0;
 
-function saveConfig(){ localStorage.setItem('accountability_config', JSON.stringify(config)); }
-function uid(){ return 'h_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
-function money(n){ return '$'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
+let weekOffset = 0;
+let selectedMobileDay = null;
+
+function saveConfig(){
+  localStorage.setItem('accountability_config', JSON.stringify(config));
+}
+function uid(){
+  return 'h_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+}
+function money(n){
+  return '$'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2});
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
 
 function startOfWeek(date=new Date()){
-  const d = new Date(date); d.setHours(0,0,0,0);
-  const day = d.getDay(); const diff = day===0 ? -6 : 1-day;
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  const day = d.getDay();
+  const diff = day===0 ? -6 : 1-day;
   d.setDate(d.getDate()+diff);
   return d;
 }
@@ -195,16 +601,30 @@ function currentWeekStart(){
   d.setDate(d.getDate()+weekOffset*7);
   return d;
 }
-function dateKey(d){ return d.toISOString().slice(0,10); }
-function weekKey(){ return dateKey(currentWeekStart()); }
-function loadWeek(){ return JSON.parse(localStorage.getItem('week_'+weekKey()) || '{"checks":{},"budgets":{}}'); }
-function saveWeek(w){ localStorage.setItem('week_'+weekKey(), JSON.stringify(w)); }
-
+function localDateKey(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function weekKey(){ return localDateKey(currentWeekStart()); }
+function loadWeek(){
+  return JSON.parse(localStorage.getItem('week_'+weekKey()) || '{"checks":{},"budgets":{}}');
+}
+function saveWeek(w){
+  localStorage.setItem('week_'+weekKey(), JSON.stringify(w));
+}
 function daysOfWeek(){
-  const s=currentWeekStart(); return Array.from({length:7},(_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return d;});
+  const s=currentWeekStart();
+  return Array.from({length:7},(_,i)=>{
+    const d=new Date(s);
+    d.setDate(s.getDate()+i);
+    return d;
+  });
 }
 function isFuture(d){
-  const today=new Date(); today.setHours(0,0,0,0);
+  const today=new Date();
+  today.setHours(0,0,0,0);
   return d>today;
 }
 function isPastOrToday(d){ return !isFuture(d); }
@@ -215,79 +635,68 @@ function ruleText(h){
   return `Every day • ${money(h.penalty)} per missed day`;
 }
 
-function render(){
-  document.getElementById('minimumFloor').value=config.minimumFloor;
-  const days=daysOfWeek(), w=loadWeek();
-  const end=days[6];
-  const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
-  document.getElementById('weekLabel').textContent=`${fmt.format(days[0])} – ${fmt.format(end)}`;
+function ensureSelectedMobileDay(days){
+  const keys=days.map(localDateKey);
+  if(selectedMobileDay && keys.includes(selectedMobileDay)) return;
 
-  let html='<thead><tr><th class="habitcell">Item</th>';
-  const todayKey=dateKey(new Date());
-  days.forEach(d=>{
-    html += `<th class="dayhead ${dateKey(d)===todayKey?'today':''}"><strong>${d.toLocaleDateString(undefined,{weekday:'short'})}</strong>${d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}</th>`;
-  });
-  html+='</tr></thead><tbody>';
-
-  config.habits.forEach(h=>{
-    html += `<tr><td class="habitcell"><div class="habitname">${escapeHtml(h.name)}</div><div class="rule">${ruleText(h)}</div></td>`;
-    days.forEach(d=>{
-      const dk=dateKey(d), checked=!!(w.checks[h.id]&&w.checks[h.id][dk]);
-      html += `<td class="${isFuture(d)&&weekOffset===0?'future':''}"><input aria-label="${escapeHtml(h.name)} ${dk}" class="check habit-check" type="checkbox" data-habit="${h.id}" data-date="${dk}" ${checked?'checked':''}></td>`;
-    });
-    html += '</tr>';
-  });
-
-  const calc=calculate(w,days);
-  html += `<tr class="penalty-row"><td class="habitcell">Daily penalty</td>`;
-  days.forEach(d=>{ html+=`<td>${money(calc.daily[dateKey(d)]||0)}</td>`; });
-  html += '</tr></tbody>';
-  document.getElementById('calendarTable').innerHTML=html;
-
-  document.querySelectorAll('.habit-check').forEach(el=>el.addEventListener('change',e=>{
-    const w=loadWeek(), hid=e.target.dataset.habit, dk=e.target.dataset.date;
-    if(!w.checks[hid]) w.checks[hid]={};
-    w.checks[hid][dk]=e.target.checked;
-    saveWeek(w); render();
-  }));
-
-  renderBudgets(w);
-  renderSummary(calc);
-  renderHabitSettings();
+  const todayKey=localDateKey(new Date());
+  if(keys.includes(todayKey)) selectedMobileDay=todayKey;
+  else if(weekOffset<0) selectedMobileDay=keys[6];
+  else selectedMobileDay=keys[0];
 }
 
 function calculate(w,days){
-  const today=new Date(); today.setHours(0,0,0,0);
-  const weekEnded = days[6] < today;
-  const activeDays = days.filter(d => weekEnded || isPastOrToday(d));
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const weekEnded=days[6] < today;
+  const activeDays=days.filter(d => weekEnded || isPastOrToday(d));
   let raw=0, daily={}, violations=[];
 
   config.habits.forEach(h=>{
-    const checkedDates = days.filter(d=>w.checks[h.id]&&w.checks[h.id][dateKey(d)]).map(dateKey);
-    const activeChecked = activeDays.filter(d=>w.checks[h.id]&&w.checks[h.id][dateKey(d)]).map(dateKey);
+    const checkedDates=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).map(localDateKey);
 
     if(h.type==='atmost'){
       const excess=Math.max(0,checkedDates.length-h.target);
       if(excess>0){
-        const penalty=excess*h.penalty; raw+=penalty;
-        checkedDates.slice(h.target).forEach(dk=>daily[dk]=(daily[dk]||0)+h.penalty);
-        violations.push({name:h.name, detail:`${checkedDates.length}/${h.target} days — ${excess} extra`, penalty});
+        const penalty=excess*h.penalty;
+        raw+=penalty;
+        checkedDates.slice(h.target).forEach(dk=>{
+          daily[dk]=(daily[dk]||0)+h.penalty;
+        });
+        violations.push({
+          name:h.name,
+          detail:`${checkedDates.length}/${h.target} days — ${excess} extra`,
+          penalty
+        });
       }
     } else if(h.type==='everyday'){
-      const missed=activeDays.filter(d=>!(w.checks[h.id]&&w.checks[h.id][dateKey(d)]));
+      const missed=activeDays.filter(d=>!(w.checks[h.id]&&w.checks[h.id][localDateKey(d)]));
       if(missed.length>0){
-        const penalty=missed.length*h.penalty; raw+=penalty;
-        missed.forEach(d=>{const dk=dateKey(d); daily[dk]=(daily[dk]||0)+h.penalty;});
-        violations.push({name:h.name, detail:`${missed.length} missed day${missed.length===1?'':'s'} so far`, penalty});
+        const penalty=missed.length*h.penalty;
+        raw+=penalty;
+        missed.forEach(d=>{
+          const dk=localDateKey(d);
+          daily[dk]=(daily[dk]||0)+h.penalty;
+        });
+        violations.push({
+          name:h.name,
+          detail:`${missed.length} missed day${missed.length===1?'':'s'} so far`,
+          penalty
+        });
       }
     } else if(h.type==='atleast'){
-      // Only count an unavoidable/current deficit: target minus completed minus remaining available days.
       const completed=checkedDates.length;
-      const remainingAvailable = weekEnded ? 0 : days.filter(isFuture).length;
+      const remainingAvailable=weekEnded ? 0 : days.filter(isFuture).length;
       const unavoidableDeficit=Math.max(0,h.target-completed-remainingAvailable);
+
       if(unavoidableDeficit>0){
-        const penalty=unavoidableDeficit*h.penalty; raw+=penalty;
-        violations.push({name:h.name, detail:`At least ${h.target}; currently ${completed} with ${remainingAvailable} day${remainingAvailable===1?'':'s'} left`, penalty});
+        const penalty=unavoidableDeficit*h.penalty;
+        raw+=penalty;
+        violations.push({
+          name:h.name,
+          detail:`At least ${h.target}; currently ${completed} with ${remainingAvailable} day${remainingAvailable===1?'':'s'} left`,
+          penalty
+        });
       }
     }
   });
@@ -296,89 +705,379 @@ function calculate(w,days){
   return {raw,total,daily,violations};
 }
 
-function renderSummary(calc){
-  document.getElementById('totalOwed').textContent=money(calc.total);
-  document.getElementById('rawPenalty').textContent=money(calc.raw);
-  document.getElementById('violationCount').textContent=calc.violations.length;
-  const floor=Number(config.minimumFloor)||0;
-  document.getElementById('floorNote').textContent = calc.raw===0
-    ? 'No penalty triggered.'
-    : calc.raw<floor ? `Raw penalties are ${money(calc.raw)}, so the ${money(floor)} minimum applies.` : `Penalty total is above the ${money(floor)} minimum.`;
-  const box=document.getElementById('violations');
-  box.innerHTML = calc.violations.length ? calc.violations.map(v=>
-    `<div class="violation"><span><strong>${escapeHtml(v.name)}</strong><br><span class="small">${escapeHtml(v.detail)}</span></span><strong class="bad">${money(v.penalty)}</strong></div>`
-  ).join('') : '<div class="zero">No rule violations so far.</div>';
+function getProgress(h,w,days){
+  const checked=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
+
+  if(h.type==='atmost'){
+    const pct=Math.min(100,(checked/Math.max(h.target,1))*100);
+    return {
+      label:`${checked} / ${h.target}`,
+      pct,
+      sub:checked<=h.target ? `${h.target-checked} day${h.target-checked===1?'':'s'} remaining before penalty` : `${checked-h.target} day${checked-h.target===1?'':'s'} over limit`
+    };
+  }
+
+  if(h.type==='atleast'){
+    const pct=Math.min(100,(checked/Math.max(h.target,1))*100);
+    return {
+      label:`${checked} / ${h.target}`,
+      pct,
+      sub:checked>=h.target ? 'Goal reached' : `${h.target-checked} more day${h.target-checked===1?'':'s'} needed`
+    };
+  }
+
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const activeDays=days.filter(d=>days[6]<today || isPastOrToday(d));
+  const completedActive=activeDays.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
+  const pct=activeDays.length ? (completedActive/activeDays.length)*100 : 0;
+  return {
+    label:`${checked} / 7`,
+    pct,
+    sub:`${completedActive} of ${activeDays.length} required day${activeDays.length===1?'':'s'} completed so far`
+  };
 }
 
-function renderBudgets(w){
-  const wrap=document.getElementById('budgetWrap');
-  wrap.innerHTML=config.budgets.map(b=>{
-    const val=w.budgets?.[b.id] ?? '';
-    let status='<span class="status warn">Enter spending to check the budget.</span>';
-    if(val!==''){
-      const n=Number(val);
-      status=n<=b.limit
-        ? `<span class="status good">✓ Within budget — ${money(b.limit-n)} left</span>`
-        : `<span class="status bad">Over by ${money(n-b.limit)}</span>`;
-    }
-    return `<div class="budget">
-      <div class="budget-title"><strong>${escapeHtml(b.name)}</strong><span class="budget-limit">Limit ${money(b.limit)}</span></div>
-      <div class="moneyinput"><span>$</span><input type="number" min="0" step="1" data-budget="${b.id}" value="${val}" placeholder="0"></div>
-      ${status}
+function render(){
+  const days=daysOfWeek();
+  ensureSelectedMobileDay(days);
+  const w=loadWeek();
+  const calc=calculate(w,days);
+
+  const end=days[6];
+  const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
+  document.getElementById('weekLabel').textContent=`${fmt.format(days[0])} – ${fmt.format(end)}`;
+
+  renderDesktop(w,days,calc);
+  renderMobile(w,days,calc);
+}
+
+function renderDesktop(w,days,calc){
+  let html='<thead><tr><th class="habitcell">Item</th>';
+  const todayKey=localDateKey(new Date());
+
+  days.forEach(d=>{
+    html += `<th class="dayhead ${localDateKey(d)===todayKey?'today':''}">
+      <strong>${d.toLocaleDateString(undefined,{weekday:'short'})}</strong>
+      ${d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}
+    </th>`;
+  });
+
+  html+='</tr></thead><tbody>';
+
+  config.habits.forEach(h=>{
+    html += `<tr>
+      <td class="habitcell">
+        <div class="habitname">${escapeHtml(h.name)}</div>
+        <div class="rule">${ruleText(h)}</div>
+      </td>`;
+
+    days.forEach(d=>{
+      const dk=localDateKey(d);
+      const checked=!!(w.checks[h.id]&&w.checks[h.id][dk]);
+      html += `<td class="${isFuture(d)&&weekOffset===0?'future':''}">
+        <input class="check habit-check" type="checkbox" data-habit="${h.id}" data-date="${dk}" ${checked?'checked':''}>
+      </td>`;
+    });
+
+    html+='</tr>';
+  });
+
+  html += `<tr class="penalty-row"><td class="habitcell">Daily penalty</td>`;
+  days.forEach(d=>{
+    html+=`<td>${money(calc.daily[localDateKey(d)]||0)}</td>`;
+  });
+  html+='</tr></tbody>';
+
+  document.getElementById('calendarTable').innerHTML=html;
+
+  document.querySelectorAll('.habit-check').forEach(el=>{
+    el.addEventListener('change',handleCheckChange);
+  });
+
+  renderBudgets('budgetWrapDesktop',w);
+  renderSummary('Desktop',calc);
+  renderDesktopSettings();
+}
+
+function renderMobile(w,days,calc){
+  const tabs=document.getElementById('dayTabs');
+  const todayKey=localDateKey(new Date());
+
+  tabs.innerHTML=days.map(d=>{
+    const dk=localDateKey(d);
+    return `<button class="day-tab ${dk===selectedMobileDay?'active':''} ${isFuture(d)&&weekOffset===0?'future-day':''}" data-day="${dk}">
+      <span class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</span>
+      <span class="dom">${d.getMonth()+1}/${d.getDate()}</span>
+    </button>`;
+  }).join('');
+
+  tabs.querySelectorAll('[data-day]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      selectedMobileDay=btn.dataset.day;
+      render();
+    });
+  });
+
+  const selectedDate=days.find(d=>localDateKey(d)===selectedMobileDay) || days[0];
+  document.getElementById('selectedDayTitle').textContent=selectedDate.toLocaleDateString(undefined,{weekday:'long'});
+  document.getElementById('selectedDayDate').textContent=selectedDate.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+
+  let badge='Selected day';
+  if(selectedMobileDay===todayKey) badge='Today';
+  else if(isFuture(selectedDate)) badge='Upcoming';
+  else badge='Past day';
+  document.getElementById('selectedDayBadge').textContent=badge;
+
+  const list=document.getElementById('dailyList');
+  list.innerHTML=config.habits.map(h=>{
+    const checked=!!(w.checks[h.id]&&w.checks[h.id][selectedMobileDay]);
+    return `<label class="daily-item">
+      <div class="daily-item-left">
+        <div class="daily-item-name">${escapeHtml(h.name)}</div>
+        <div class="daily-item-rule">${ruleText(h)}</div>
+      </div>
+      <input class="mobile-check habit-check" type="checkbox" data-habit="${h.id}" data-date="${selectedMobileDay}" ${checked?'checked':''}>
+    </label>`;
+  }).join('');
+
+  list.querySelectorAll('.habit-check').forEach(el=>{
+    el.addEventListener('change',handleCheckChange);
+  });
+
+  document.getElementById('mobileDayPenalty').textContent=money(calc.daily[selectedMobileDay]||0);
+
+  const progress=document.getElementById('progressList');
+  progress.innerHTML=config.habits.map(h=>{
+    const p=getProgress(h,w,days);
+    return `<div class="progress-item">
+      <div class="progress-top">
+        <div class="progress-label">${escapeHtml(h.name)}</div>
+        <div class="progress-value">${escapeHtml(p.label)}</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${Math.max(0,Math.min(100,p.pct))}%"></div>
+      </div>
+      <div class="progress-sub">${escapeHtml(p.sub)}</div>
     </div>`;
   }).join('');
-  wrap.querySelectorAll('[data-budget]').forEach(el=>el.addEventListener('input',e=>{
-    const w=loadWeek(); if(!w.budgets)w.budgets={}; w.budgets[e.target.dataset.budget]=e.target.value; saveWeek(w); renderBudgets(w);
-  }));
+
+  renderSummary('Mobile',calc);
+  renderBudgets('budgetWrapMobile',w);
+  renderMobileSettings();
 }
 
-function renderHabitSettings(){
-  const list=document.getElementById('habitsList');
+function handleCheckChange(e){
+  const w=loadWeek();
+  const hid=e.target.dataset.habit;
+  const dk=e.target.dataset.date;
+
+  if(!w.checks[hid]) w.checks[hid]={};
+  w.checks[hid][dk]=e.target.checked;
+  saveWeek(w);
+  render();
+}
+
+function renderSummary(suffix,calc){
+  document.getElementById('totalOwed'+suffix).textContent=money(calc.total);
+  document.getElementById('rawPenalty'+suffix).textContent=money(calc.raw);
+  document.getElementById('violationCount'+suffix).textContent=calc.violations.length;
+
+  const floor=Number(config.minimumFloor)||0;
+  document.getElementById('floorNote'+suffix).textContent =
+    calc.raw===0
+      ? 'No penalty triggered.'
+      : calc.raw<floor
+        ? `Raw penalties are ${money(calc.raw)}, so the ${money(floor)} minimum applies.`
+        : `Penalty total is above the ${money(floor)} minimum.`;
+
+  const box=document.getElementById('violations'+suffix);
+  box.innerHTML=calc.violations.length
+    ? calc.violations.map(v=>`
+      <div class="violation">
+        <span>
+          <strong>${escapeHtml(v.name)}</strong><br>
+          <span class="small">${escapeHtml(v.detail)}</span>
+        </span>
+        <strong class="bad">${money(v.penalty)}</strong>
+      </div>
+    `).join('')
+    : '<div class="zero">No rule violations so far.</div>';
+}
+
+function budgetCardHtml(b,w){
+  const val=w.budgets?.[b.id] ?? '';
+  let status='<span class="status warn">Enter spending to check the budget.</span>';
+
+  if(val!==''){
+    const n=Number(val);
+    status=n<=b.limit
+      ? `<span class="status good">✓ Within budget — ${money(b.limit-n)} left</span>`
+      : `<span class="status bad">Over by ${money(n-b.limit)}</span>`;
+  }
+
+  return `<div class="budget">
+    <div class="budget-title">
+      <strong>${escapeHtml(b.name)}</strong>
+      <span class="budget-limit">Limit ${money(b.limit)}</span>
+    </div>
+    <div class="moneyinput">
+      <span>$</span>
+      <input type="number" min="0" step="1" data-budget="${b.id}" value="${val}" placeholder="0">
+    </div>
+    ${status}
+  </div>`;
+}
+
+function renderBudgets(targetId,w){
+  const wrap=document.getElementById(targetId);
+  wrap.innerHTML=config.budgets.map(b=>budgetCardHtml(b,w)).join('');
+
+  wrap.querySelectorAll('[data-budget]').forEach(el=>{
+    el.addEventListener('input',e=>{
+      const w=loadWeek();
+      if(!w.budgets) w.budgets={};
+      w.budgets[e.target.dataset.budget]=e.target.value;
+      saveWeek(w);
+      renderBudgets(targetId,w);
+    });
+  });
+}
+
+function renderDesktopSettings(){
+  document.getElementById('minimumFloorDesktop').value=config.minimumFloor;
+  const list=document.getElementById('habitsListDesktop');
+
   list.innerHTML=config.habits.map((h,i)=>`
     <div class="habit-edit">
-      <input class="wide" type="text" value="${escapeAttr(h.name)}" data-i="${i}" data-f="name" aria-label="Item name">
-      <select data-i="${i}" data-f="type" aria-label="Rule type">
+      <input type="text" value="${escapeAttr(h.name)}" data-i="${i}" data-f="name">
+      <select data-i="${i}" data-f="type">
         <option value="atmost" ${h.type==='atmost'?'selected':''}>At most</option>
         <option value="atleast" ${h.type==='atleast'?'selected':''}>At least</option>
         <option value="everyday" ${h.type==='everyday'?'selected':''}>Every day</option>
       </select>
-      <input type="number" min="1" max="7" value="${h.type==='everyday'?7:h.target}" data-i="${i}" data-f="target" ${h.type==='everyday'?'disabled':''} aria-label="Days">
-      <input type="number" min="0" step="5" value="${h.penalty}" data-i="${i}" data-f="penalty" aria-label="Penalty">
-      <button class="iconbtn" data-remove="${i}" title="Remove">×</button>
+      <input type="number" min="1" max="7" value="${h.type==='everyday'?7:h.target}" data-i="${i}" data-f="target" ${h.type==='everyday'?'disabled':''}>
+      <input type="number" min="0" step="5" value="${h.penalty}" data-i="${i}" data-f="penalty">
+      <button class="iconbtn" data-remove="${i}">×</button>
     </div>
   `).join('');
 
-  list.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',e=>{
-    const i=Number(e.target.dataset.i), f=e.target.dataset.f;
-    if(f==='name') config.habits[i][f]=e.target.value.trim()||'Untitled';
-    else if(f==='type') {
-      config.habits[i].type=e.target.value;
-      if(e.target.value==='everyday') config.habits[i].target=7;
-    } else config.habits[i][f]=Number(e.target.value);
-    saveConfig(); render();
-  }));
-  list.querySelectorAll('[data-remove]').forEach(el=>el.addEventListener('click',e=>{
-    config.habits.splice(Number(e.target.dataset.remove),1); saveConfig(); render();
-  }));
+  wireSettings(list);
 }
 
-document.getElementById('minimumFloor').addEventListener('change',e=>{
-  config.minimumFloor=Number(e.target.value)||0; saveConfig(); render();
-});
-document.getElementById('addHabit').addEventListener('click',()=>{
-  config.habits.push({id:uid(),name:'New item',type:'atleast',target:1,penalty:25}); saveConfig(); render();
-});
-document.getElementById('prevWeek').addEventListener('click',()=>{weekOffset--;render();});
-document.getElementById('nextWeek').addEventListener('click',()=>{weekOffset++;render();});
-document.getElementById('thisWeek').addEventListener('click',()=>{weekOffset=0;render();});
-document.getElementById('clearWeek').addEventListener('click',()=>{
+function renderMobileSettings(){
+  document.getElementById('minimumFloorMobile').value=config.minimumFloor;
+  const list=document.getElementById('habitsListMobile');
+
+  list.innerHTML=config.habits.map((h,i)=>`
+    <div class="mobile-setting-item">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" value="${escapeAttr(h.name)}" data-i="${i}" data-f="name" style="flex:1">
+        <button class="iconbtn" data-remove="${i}">×</button>
+      </div>
+      <div class="mobile-setting-row">
+        <div class="field">
+          <label>Rule</label>
+          <select data-i="${i}" data-f="type">
+            <option value="atmost" ${h.type==='atmost'?'selected':''}>At most</option>
+            <option value="atleast" ${h.type==='atleast'?'selected':''}>At least</option>
+            <option value="everyday" ${h.type==='everyday'?'selected':''}>Every day</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Days</label>
+          <input type="number" min="1" max="7" value="${h.type==='everyday'?7:h.target}" data-i="${i}" data-f="target" ${h.type==='everyday'?'disabled':''}>
+        </div>
+      </div>
+      <div class="field">
+        <label>Penalty per day</label>
+        <input type="number" min="0" step="5" value="${h.penalty}" data-i="${i}" data-f="penalty">
+      </div>
+    </div>
+  `).join('');
+
+  wireSettings(list);
+}
+
+function wireSettings(list){
+  list.querySelectorAll('[data-f]').forEach(el=>{
+    el.addEventListener('change',e=>{
+      const i=Number(e.target.dataset.i);
+      const f=e.target.dataset.f;
+
+      if(f==='name'){
+        config.habits[i][f]=e.target.value.trim()||'Untitled';
+      } else if(f==='type'){
+        config.habits[i].type=e.target.value;
+        if(e.target.value==='everyday') config.habits[i].target=7;
+      } else {
+        config.habits[i][f]=Number(e.target.value);
+      }
+
+      saveConfig();
+      render();
+    });
+  });
+
+  list.querySelectorAll('[data-remove]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      config.habits.splice(Number(e.target.dataset.remove),1);
+      saveConfig();
+      render();
+    });
+  });
+}
+
+function addHabit(){
+  config.habits.push({
+    id:uid(),
+    name:'New item',
+    type:'atleast',
+    target:1,
+    penalty:25
+  });
+  saveConfig();
+  render();
+}
+
+function setMinimumFloor(value){
+  config.minimumFloor=Number(value)||0;
+  saveConfig();
+  render();
+}
+
+function clearCurrentWeek(){
   if(confirm('Clear every check and budget entry for this week?')){
-    localStorage.removeItem('week_'+weekKey()); render();
+    localStorage.removeItem('week_'+weekKey());
+    render();
   }
+}
+
+document.getElementById('prevWeek').addEventListener('click',()=>{
+  weekOffset--;
+  selectedMobileDay=null;
+  render();
+});
+document.getElementById('nextWeek').addEventListener('click',()=>{
+  weekOffset++;
+  selectedMobileDay=null;
+  render();
+});
+document.getElementById('thisWeek').addEventListener('click',()=>{
+  weekOffset=0;
+  selectedMobileDay=null;
+  render();
 });
 
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-function escapeAttr(s){return escapeHtml(s);}
+document.getElementById('clearWeekDesktop').addEventListener('click',clearCurrentWeek);
+document.getElementById('clearWeekMobile').addEventListener('click',clearCurrentWeek);
+
+document.getElementById('addHabitDesktop').addEventListener('click',addHabit);
+document.getElementById('addHabitMobile').addEventListener('click',addHabit);
+
+document.getElementById('minimumFloorDesktop').addEventListener('change',e=>setMinimumFloor(e.target.value));
+document.getElementById('minimumFloorMobile').addEventListener('change',e=>setMinimumFloor(e.target.value));
+
 render();
 </script>
 </body>
