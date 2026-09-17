@@ -122,6 +122,25 @@
   .penalty-row td{background:#fffaf0;font-weight:750;font-size:12px}
   .penalty-row .habitcell{background:#fffaf0}
 
+  .vacation-row td{background:#f4f7ff}
+  .vacation-row .habitcell{background:#f4f7ff}
+  .vacation-cell{background:#f7f8fb !important;color:var(--muted)}
+  .vacation-head{background:#f0f3fb !important}
+  .vacation-head::after{
+    content:"OFF";
+    display:block;
+    width:max-content;
+    margin:4px auto 0;
+    padding:2px 5px;
+    border-radius:999px;
+    background:#dde4ff;
+    color:#3547c8;
+    font-size:8px;
+    font-weight:850;
+  }
+  .vacation-dash{font-weight:850;color:#9aa4b8}
+  .vacation-check{width:22px;height:22px;accent-color:var(--accent)}
+
   .budget-wrap{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -266,6 +285,43 @@
   }
   .day-tab.active .dom{color:rgba(255,255,255,.8)}
   .day-tab.future-day{opacity:.55}
+  .day-tab.vacation-day{border-style:dashed;background:#f4f7ff}
+  .day-tab.vacation-day.active{background:var(--accent);border-style:solid}
+  .day-tab .vac-mark{
+    display:block;
+    height:10px;
+    margin-top:2px;
+    font-size:8px;
+    font-weight:900;
+    color:#3547c8;
+  }
+  .day-tab.active .vac-mark{color:white}
+
+  .vacation-toggle{
+    width:100%;
+    border:1px solid var(--line);
+    background:#f8f9fc;
+    color:var(--ink);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-bottom:12px;
+    font-weight:800;
+    text-align:left;
+  }
+  .vacation-toggle.active{
+    background:#eef1ff;
+    border-color:#cbd4ff;
+    color:#3547c8;
+  }
+  .vacation-notice{
+    border:1px dashed #cbd4ff;
+    background:#f7f8ff;
+    color:#3547c8;
+    border-radius:14px;
+    padding:16px;
+    line-height:1.45;
+    font-size:13px;
+  }
 
   .mobile-day-title{
     display:flex;
@@ -493,6 +549,10 @@
           <span class="pill" id="selectedDayBadge"></span>
         </div>
 
+        <button class="vacation-toggle" id="vacationToggleMobile" type="button">
+          Mark this day as vacation
+        </button>
+
         <div class="daily-list" id="dailyList"></div>
         <div class="day-penalty">
           <span>Daily penalty</span>
@@ -616,10 +676,21 @@ function localDateKey(d){
 }
 function weekKey(){ return localDateKey(currentWeekStart()); }
 function loadWeek(){
-  return JSON.parse(localStorage.getItem('week_'+weekKey()) || '{"checks":{},"budgets":{}}');
+  const w=JSON.parse(localStorage.getItem('week_'+weekKey()) || '{"checks":{},"budgets":{}}');
+  if(!w.checks) w.checks={};
+  if(!w.budgets) w.budgets={};
+  if(!w.vacation) w.vacation={};
+  return w;
 }
 function saveWeek(w){
+  if(!w.vacation) w.vacation={};
   localStorage.setItem('week_'+weekKey(), JSON.stringify(w));
+}
+function isVacation(w,dk){
+  return !!(w.vacation && w.vacation[dk]);
+}
+function vacationCount(w,days){
+  return days.filter(d=>isVacation(w,localDateKey(d))).length;
 }
 function daysOfWeek(){
   const s=currentWeekStart();
@@ -655,53 +726,77 @@ function ensureSelectedMobileDay(days){
 function calculate(w,days){
   const today=new Date();
   today.setHours(0,0,0,0);
+
   const weekEnded=days[6] < today;
-  const activeDays=days.filter(d => weekEnded || isPastOrToday(d));
+  const vacationDays=vacationCount(w,days);
+  const eligibleDays=days.filter(d=>!isVacation(w,localDateKey(d)));
+  const activeEligibleDays=eligibleDays.filter(d => weekEnded || isPastOrToday(d));
+
   let raw=0, daily={}, violations=[];
 
   config.habits.forEach(h=>{
-    const checkedDates=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).map(localDateKey);
+    const checkedDates=eligibleDays
+      .filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)])
+      .map(localDateKey);
 
     if(h.type==='atmost'){
       const excess=Math.max(0,checkedDates.length-h.target);
+
       if(excess>0){
         const penalty=excess*h.penalty;
         raw+=penalty;
+
         checkedDates.slice(h.target).forEach(dk=>{
           daily[dk]=(daily[dk]||0)+h.penalty;
         });
+
         violations.push({
           name:h.name,
-          detail:`${checkedDates.length}/${h.target} days — ${excess} extra`,
+          detail:`${checkedDates.length}/${h.target} eligible days — ${excess} extra`,
           penalty
         });
       }
+
     } else if(h.type==='everyday'){
-      const missed=activeDays.filter(d=>!(w.checks[h.id]&&w.checks[h.id][localDateKey(d)]));
+      const missed=activeEligibleDays.filter(
+        d=>!(w.checks[h.id]&&w.checks[h.id][localDateKey(d)])
+      );
+
       if(missed.length>0){
         const penalty=missed.length*h.penalty;
         raw+=penalty;
+
         missed.forEach(d=>{
           const dk=localDateKey(d);
           daily[dk]=(daily[dk]||0)+h.penalty;
         });
+
         violations.push({
           name:h.name,
-          detail:`${missed.length} missed day${missed.length===1?'':'s'} so far`,
+          detail:`${missed.length} missed eligible day${missed.length===1?'':'s'} so far`,
           penalty
         });
       }
+
     } else if(h.type==='atleast'){
+      const adjustedTarget=Math.max(0,h.target-vacationDays);
       const completed=checkedDates.length;
-      const remainingAvailable=weekEnded ? 0 : days.filter(isFuture).length;
-      const unavoidableDeficit=Math.max(0,h.target-completed-remainingAvailable);
+      const remainingAvailable=weekEnded
+        ? 0
+        : eligibleDays.filter(isFuture).length;
+
+      const unavoidableDeficit=Math.max(
+        0,
+        adjustedTarget-completed-remainingAvailable
+      );
 
       if(unavoidableDeficit>0){
         const penalty=unavoidableDeficit*h.penalty;
         raw+=penalty;
+
         violations.push({
           name:h.name,
-          detail:`At least ${h.target}; currently ${completed} with ${remainingAvailable} day${remainingAvailable===1?'':'s'} left`,
+          detail:`At least ${adjustedTarget}${vacationDays ? ` (adjusted from ${h.target} for ${vacationDays} vacation day${vacationDays===1?'':'s'})` : ''}; currently ${completed} with ${remainingAvailable} eligible day${remainingAvailable===1?'':'s'} left`,
           penalty
         });
       }
@@ -709,39 +804,61 @@ function calculate(w,days){
   });
 
   const total=raw>0 ? (Number(config.minimumFloor)||0) + raw : 0;
-  return {raw,total,daily,violations};
+  return {raw,total,daily,violations,vacationDays};
 }
 
 function getProgress(h,w,days){
-  const checked=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
+  const vacCount=vacationCount(w,days);
+  const eligibleDays=days.filter(d=>!isVacation(w,localDateKey(d)));
+  const checked=eligibleDays.filter(
+    d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]
+  ).length;
 
   if(h.type==='atmost'){
     const pct=Math.min(100,(checked/Math.max(h.target,1))*100);
+
     return {
       label:`${checked} / ${h.target}`,
       pct,
-      sub:checked<=h.target ? `${h.target-checked} day${h.target-checked===1?'':'s'} remaining before penalty` : `${checked-h.target} day${checked-h.target===1?'':'s'} over limit`
+      sub:checked<=h.target
+        ? `${h.target-checked} eligible day${h.target-checked===1?'':'s'} remaining before penalty`
+        : `${checked-h.target} eligible day${checked-h.target===1?'':'s'} over limit`
     };
   }
 
   if(h.type==='atleast'){
-    const pct=Math.min(100,(checked/Math.max(h.target,1))*100);
+    const adjustedTarget=Math.max(0,h.target-vacCount);
+    const pct=adjustedTarget===0 ? 100 : Math.min(100,(checked/adjustedTarget)*100);
+
     return {
-      label:`${checked} / ${h.target}`,
+      label:`${checked} / ${adjustedTarget}`,
       pct,
-      sub:checked>=h.target ? 'Goal reached' : `${h.target-checked} more day${h.target-checked===1?'':'s'} needed`
+      sub:adjustedTarget===0
+        ? `Requirement waived by ${vacCount} vacation day${vacCount===1?'':'s'}`
+        : checked>=adjustedTarget
+          ? `Goal reached${vacCount ? ` • adjusted from ${h.target}` : ''}`
+          : `${adjustedTarget-checked} more eligible day${adjustedTarget-checked===1?'':'s'} needed${vacCount ? ` • adjusted from ${h.target}` : ''}`
     };
   }
 
   const today=new Date();
   today.setHours(0,0,0,0);
-  const activeDays=days.filter(d=>days[6]<today || isPastOrToday(d));
-  const completedActive=activeDays.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
-  const pct=activeDays.length ? (completedActive/activeDays.length)*100 : 0;
+
+  const activeEligibleDays=eligibleDays.filter(
+    d=>days[6]<today || isPastOrToday(d)
+  );
+  const completedActive=activeEligibleDays.filter(
+    d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]
+  ).length;
+
+  const pct=activeEligibleDays.length
+    ? (completedActive/activeEligibleDays.length)*100
+    : 100;
+
   return {
-    label:`${checked} / 7`,
+    label:`${checked} / ${eligibleDays.length}`,
     pct,
-    sub:`${completedActive} of ${activeDays.length} required day${activeDays.length===1?'':'s'} completed so far`
+    sub:`${completedActive} of ${activeEligibleDays.length} eligible required day${activeEligibleDays.length===1?'':'s'} completed so far${vacCount ? ` • ${vacCount} vacation day${vacCount===1?'':'s'} excluded` : ''}`
   };
 }
 
@@ -764,13 +881,39 @@ function renderDesktop(w,days,calc){
   const todayKey=localDateKey(new Date());
 
   days.forEach(d=>{
-    html += `<th class="dayhead ${localDateKey(d)===todayKey?'today':''}">
+    const dk=localDateKey(d);
+    const vac=isVacation(w,dk);
+
+    html += `<th class="dayhead ${dk===todayKey?'today':''} ${vac?'vacation-head':''}">
       <strong>${d.toLocaleDateString(undefined,{weekday:'short'})}</strong>
       ${d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}
     </th>`;
   });
 
   html+='</tr></thead><tbody>';
+
+  html += `<tr class="vacation-row">
+    <td class="habitcell">
+      <div class="habitname">Vacation</div>
+      <div class="rule">Exclude the entire day from rules and penalties</div>
+    </td>`;
+
+  days.forEach(d=>{
+    const dk=localDateKey(d);
+    const vac=isVacation(w,dk);
+
+    html += `<td>
+      <input
+        class="vacation-check"
+        type="checkbox"
+        data-vacation-date="${dk}"
+        ${vac?'checked':''}
+        aria-label="Vacation ${dk}"
+      >
+    </td>`;
+  });
+
+  html+='</tr>';
 
   config.habits.forEach(h=>{
     html += `<tr>
@@ -781,25 +924,50 @@ function renderDesktop(w,days,calc){
 
     days.forEach(d=>{
       const dk=localDateKey(d);
+      const vac=isVacation(w,dk);
       const checked=!!(w.checks[h.id]&&w.checks[h.id][dk]);
-      html += `<td class="${isFuture(d)&&weekOffset===0?'future':''}">
-        <input class="check habit-check" type="checkbox" data-habit="${h.id}" data-date="${dk}" ${checked?'checked':''}>
-      </td>`;
+
+      if(vac){
+        html += `<td class="vacation-cell">
+          <span class="vacation-dash" title="Vacation day">—</span>
+        </td>`;
+      }else{
+        html += `<td class="${isFuture(d)&&weekOffset===0?'future':''}">
+          <input
+            class="check habit-check"
+            type="checkbox"
+            data-habit="${h.id}"
+            data-date="${dk}"
+            ${checked?'checked':''}
+          >
+        </td>`;
+      }
     });
 
     html+='</tr>';
   });
 
   html += `<tr class="penalty-row"><td class="habitcell">Daily penalty</td>`;
+
   days.forEach(d=>{
-    html+=`<td>${money(calc.daily[localDateKey(d)]||0)}</td>`;
+    const dk=localDateKey(d);
+    html+=isVacation(w,dk)
+      ? `<td class="vacation-cell">OFF</td>`
+      : `<td>${money(calc.daily[dk]||0)}</td>`;
   });
+
   html+='</tr></tbody>';
 
   document.getElementById('calendarTable').innerHTML=html;
 
   document.querySelectorAll('.habit-check').forEach(el=>{
     el.addEventListener('change',handleCheckChange);
+  });
+
+  document.querySelectorAll('[data-vacation-date]').forEach(el=>{
+    el.addEventListener('change',e=>{
+      setVacationDay(e.target.dataset.vacationDate,e.target.checked);
+    });
   });
 
   renderBudgets('budgetWrapDesktop',w);
@@ -813,9 +981,12 @@ function renderMobile(w,days,calc){
 
   tabs.innerHTML=days.map(d=>{
     const dk=localDateKey(d);
-    return `<button class="day-tab ${dk===selectedMobileDay?'active':''} ${isFuture(d)&&weekOffset===0?'future-day':''}" data-day="${dk}">
+    const vac=isVacation(w,dk);
+
+    return `<button class="day-tab ${dk===selectedMobileDay?'active':''} ${isFuture(d)&&weekOffset===0?'future-day':''} ${vac?'vacation-day':''}" data-day="${dk}">
       <span class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</span>
       <span class="dom">${d.getMonth()+1}/${d.getDate()}</span>
+      <span class="vac-mark">${vac?'OFF':''}</span>
     </button>`;
   }).join('');
 
@@ -827,36 +998,74 @@ function renderMobile(w,days,calc){
   });
 
   const selectedDate=days.find(d=>localDateKey(d)===selectedMobileDay) || days[0];
-  document.getElementById('selectedDayTitle').textContent=selectedDate.toLocaleDateString(undefined,{weekday:'long'});
-  document.getElementById('selectedDayDate').textContent=selectedDate.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+  const selectedVacation=isVacation(w,selectedMobileDay);
+
+  document.getElementById('selectedDayTitle').textContent=
+    selectedDate.toLocaleDateString(undefined,{weekday:'long'});
+
+  document.getElementById('selectedDayDate').textContent=
+    selectedDate.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
 
   let badge='Selected day';
-  if(selectedMobileDay===todayKey) badge='Today';
+  if(selectedVacation) badge='Vacation';
+  else if(selectedMobileDay===todayKey) badge='Today';
   else if(isFuture(selectedDate)) badge='Upcoming';
   else badge='Past day';
+
   document.getElementById('selectedDayBadge').textContent=badge;
 
+  const vacationButton=document.getElementById('vacationToggleMobile');
+  vacationButton.classList.toggle('active',selectedVacation);
+  vacationButton.textContent=selectedVacation
+    ? '✓ Vacation day — excluded from all rules'
+    : 'Mark this day as vacation';
+
+  vacationButton.onclick=()=>{
+    setVacationDay(selectedMobileDay,!selectedVacation);
+  };
+
   const list=document.getElementById('dailyList');
-  list.innerHTML=config.habits.map(h=>{
-    const checked=!!(w.checks[h.id]&&w.checks[h.id][selectedMobileDay]);
-    return `<label class="daily-item">
-      <div class="daily-item-left">
-        <div class="daily-item-name">${escapeHtml(h.name)}</div>
-        <div class="daily-item-rule">${ruleText(h)}</div>
+
+  if(selectedVacation){
+    list.innerHTML=`
+      <div class="vacation-notice">
+        <strong>This day is off.</strong><br>
+        It will not create missed-day penalties, it will not count toward an “at most” limit,
+        and weekly minimum goals are adjusted for the vacation day.
       </div>
-      <input class="mobile-check habit-check" type="checkbox" data-habit="${h.id}" data-date="${selectedMobileDay}" ${checked?'checked':''}>
-    </label>`;
-  }).join('');
+    `;
+  }else{
+    list.innerHTML=config.habits.map(h=>{
+      const checked=!!(w.checks[h.id]&&w.checks[h.id][selectedMobileDay]);
 
-  list.querySelectorAll('.habit-check').forEach(el=>{
-    el.addEventListener('change',handleCheckChange);
-  });
+      return `<label class="daily-item">
+        <div class="daily-item-left">
+          <div class="daily-item-name">${escapeHtml(h.name)}</div>
+          <div class="daily-item-rule">${ruleText(h)}</div>
+        </div>
+        <input
+          class="mobile-check habit-check"
+          type="checkbox"
+          data-habit="${h.id}"
+          data-date="${selectedMobileDay}"
+          ${checked?'checked':''}
+        >
+      </label>`;
+    }).join('');
 
-  document.getElementById('mobileDayPenalty').textContent=money(calc.daily[selectedMobileDay]||0);
+    list.querySelectorAll('.habit-check').forEach(el=>{
+      el.addEventListener('change',handleCheckChange);
+    });
+  }
+
+  document.getElementById('mobileDayPenalty').textContent=
+    selectedVacation ? 'OFF' : money(calc.daily[selectedMobileDay]||0);
 
   const progress=document.getElementById('progressList');
+
   progress.innerHTML=config.habits.map(h=>{
     const p=getProgress(h,w,days);
+
     return `<div class="progress-item">
       <div class="progress-top">
         <div class="progress-label">${escapeHtml(h.name)}</div>
@@ -872,6 +1081,14 @@ function renderMobile(w,days,calc){
   renderSummary('Mobile',calc);
   renderBudgets('budgetWrapMobile',w);
   renderMobileSettings();
+}
+
+function setVacationDay(dk,isOn){
+  const w=loadWeek();
+  if(!w.vacation) w.vacation={};
+  w.vacation[dk]=!!isOn;
+  saveWeek(w);
+  render();
 }
 
 function handleCheckChange(e){
@@ -1088,12 +1305,20 @@ function buildWeeklySummary(){
   const days=daysOfWeek();
   const w=loadWeek();
   const calc=calculate(w,days);
+  const vacCount=vacationCount(w,days);
+  const eligibleDays=days.filter(d=>!isVacation(w,localDateKey(d)));
 
   const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
   const weekLabel=`${fmt.format(days[0])} – ${fmt.format(days[6])}`;
 
+  const vacationLabels=days
+    .filter(d=>isVacation(w,localDateKey(d)))
+    .map(d=>d.toLocaleDateString(undefined,{weekday:'short',month:'numeric',day:'numeric'}));
+
   const habitLines=config.habits.map(h=>{
-    const checked=days.filter(d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]).length;
+    const checked=eligibleDays.filter(
+      d=>w.checks[h.id]&&w.checks[h.id][localDateKey(d)]
+    ).length;
 
     if(h.type==='atmost'){
       const over=Math.max(0,checked-h.target);
@@ -1101,20 +1326,26 @@ function buildWeeklySummary(){
     }
 
     if(h.type==='atleast'){
-      const short=Math.max(0,h.target-checked);
-      return `${h.name}: ${checked}/${h.target}${short>0 ? ` (${short} short)` : ''}`;
+      const adjustedTarget=Math.max(0,h.target-vacCount);
+      const short=Math.max(0,adjustedTarget-checked);
+      const adjustedNote=vacCount ? `, adjusted from ${h.target}` : '';
+
+      return `${h.name}: ${checked}/${adjustedTarget}${short>0 ? ` (${short} short)` : ''}${adjustedNote}`;
     }
 
-    return `${h.name}: ${checked}/7`;
+    return `${h.name}: ${checked}/${eligibleDays.length}`;
   });
 
   const budgetLines=config.budgets.map(b=>{
     const raw=w.budgets?.[b.id];
+
     if(raw==='' || raw===undefined || raw===null){
       return `${b.name}: not entered / ${money(b.limit)}`;
     }
+
     const spent=Number(raw);
     const diff=b.limit-spent;
+
     return `${b.name}: ${money(spent)} / ${money(b.limit)}${diff>=0 ? ` (${money(diff)} left)` : ` (${money(Math.abs(diff))} over)`}`;
   });
 
@@ -1122,6 +1353,8 @@ function buildWeeklySummary(){
 
   return [
     `Weekly Accountability — ${weekLabel}`,
+    '',
+    `Vacation days: ${vacationLabels.length ? vacationLabels.join(', ') : 'None'}`,
     '',
     ...habitLines,
     '',
